@@ -1,6 +1,7 @@
-import axios from "axios";
 import React from "react";
+import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import Cookies from "js-cookie";
 
 export interface UserCredentials {
   email: string;
@@ -29,26 +30,29 @@ type Props = {
 export const AuthContext = React.createContext<AuthContextType>(
   {} as AuthContextType
 );
+
 const AuthProvider = ({ children }: Props) => {
   const baseURL = "http://localhost:3002/api/auth";
-  const token = localStorage.getItem("token");
+  const [token, setToken] = React.useState<string | null>(
+    Cookies.get("token") || null
+  );
   const [isLoggedIn, setIsLoggedIn] = React.useState<boolean>(!!token);
   const navigate = useNavigate();
+
   const handleAuth = async (
     userCredentials: UserCredentials,
     formMode: FormMode
   ) => {
     try {
       const res = await axios.post(`${baseURL}/${formMode}`, userCredentials);
-      console.log(res);
-      localStorage.setItem("token", res.data.accessToken);
+      Cookies.set("token", res.data.accessToken);
+      setToken(res.data.accessToken);
       setIsLoggedIn(true);
       navigate("/");
     } catch (err) {
       if (axios.isAxiosError(err)) {
         const { errors } = err.response?.data;
         errors.forEach((error: any) => {
-          console.error(error);
           alert(error.message);
         });
         return;
@@ -56,10 +60,13 @@ const AuthProvider = ({ children }: Props) => {
       console.error(err);
     }
   };
+
   const handleLogout = () => {
     localStorage.removeItem("token");
+    setToken(null);
     setIsLoggedIn(false);
   };
+
   return (
     <AuthContext.Provider
       value={{ token, handleAuth, handleLogout, isLoggedIn }}
