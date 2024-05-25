@@ -1,5 +1,6 @@
 import React from "react";
 import { Link, useResolvedPath, useMatch } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 interface LinkData {
   name: string;
@@ -11,28 +12,21 @@ interface NavLinkProps {
   children: React.ReactNode;
   otherClasses?: string;
   activeClasses?: string;
-  inactiveClasses?: string;
   [key: string]: any;
 }
 
 const NavLink: React.FC<NavLinkProps> = ({
   to,
   children,
-  otherClasses,
-  activeClasses,
-  inactiveClasses,
+  otherClasses = "",
+  activeClasses = "",
   ...props
 }) => {
   const resolvedPath = useResolvedPath(to);
   const isActive = useMatch({ path: resolvedPath.pathname, end: true });
+  const classes = `${otherClasses} ${isActive ? activeClasses : ""}`.trim();
   return (
-    <Link
-      to={to}
-      className={`${otherClasses || ""} ${
-        isActive ? activeClasses || "" : inactiveClasses || ""
-      }`}
-      {...props}
-    >
+    <Link to={to} className={classes} {...props}>
       {children}
     </Link>
   );
@@ -45,12 +39,12 @@ const Navbar = () => {
     { name: "Contacts", path: "/contacts" },
     { name: "Services", path: "/services" },
   ];
-  const [isLoggedIn, setIsLoggedIn] = React.useState(false);
-  const [isAdmin, setIsAdmin] = React.useState(true);
+  const [isAdmin, setIsAdmin] = React.useState<boolean>(true);
   isAdmin && navbarData.push({ name: "Dashboard", path: "/dashboard" });
+  const { isLoggedIn, handleLogout } = useAuth();
   return (
-    <nav className="fixed top-0 w-full bg-indigo-800 text-white border border-black">
-      <ul className="flex font-medium items-center justify-between py-4 px-8">
+    <nav className="fixed top-0 w-full bg-indigo-800 text-white border border-black py-4 px-8">
+      <ul className="flex w-full font-medium justify-between items-center">
         <li>
           <Link to="/" className="text-2xl">
             Logo
@@ -63,7 +57,7 @@ const Navbar = () => {
             </NavLink>
           ))}
         </li>
-        <li className="flex items-center gap-4">
+        <li className="flex gap-4">
           {!isLoggedIn ? (
             <>
               <NavLink
@@ -84,7 +78,9 @@ const Navbar = () => {
           ) : (
             <>
               <NavLink to="/profile">Profile</NavLink>
-              <NavLink to="/sign-out">Sign Out</NavLink>
+              <NavLink onClick={handleLogout} to="/sign-out">
+                Sign Out
+              </NavLink>
             </>
           )}
         </li>
